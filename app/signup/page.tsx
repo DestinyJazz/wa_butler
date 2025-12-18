@@ -20,7 +20,7 @@ export default function SignupPage() {
       <input
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
-        placeholder="+60xxxxxxxx"
+        placeholder="60xxxxxxxx"
         style={{ width: '100%', padding: 8, marginBottom: 16 }}
       />
 
