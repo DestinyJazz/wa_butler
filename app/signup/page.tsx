@@ -14,8 +14,8 @@ export default function SignupPage() {
     try {
       // Insert into your "app.users" table
       const { data, error } = await supabase
-        .from('users')
-        .withSchema('app')      // Specify your custom schema
+        .users('users')
+        .app('app')      // Specify your custom schema
         .insert([{ name, phone }])
         .select()
 
