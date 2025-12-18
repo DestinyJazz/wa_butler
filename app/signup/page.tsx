@@ -1,16 +1,35 @@
 'use client'
 import { useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../lib/supabase' // Make sure lib/supabase.ts uses anon key
 
 export default function SignupPage() {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
 
   const handleContinue = async () => {
-    const { data, error } = await supabase.from('users').insert([{ name, phone }]).select()
-    if (error) return alert(error.message)
-    localStorage.setItem('user_id', data[0].id)
-    window.location.href = '/api/google/oauth'
+    if (!name || !phone) {
+      return alert('Please enter both name and phone number.')
+    }
+
+    try {
+      // Insert into your "app.users" table
+      const { data, error } = await supabase
+        .from('users')
+        .withSchema('app')      // Specify your custom schema
+        .insert([{ name, phone }])
+        .select()
+
+      if (error) throw error
+      if (!data || data.length === 0) throw new Error('Failed to create user.')
+
+      // Save user id locally
+      localStorage.setItem('user_id', data[0].id)
+
+      // Redirect to Google OAuth
+      window.location.href = '/api/google/oauth'
+    } catch (err: any) {
+      alert(err.message)
+    }
   }
 
   return (
@@ -32,7 +51,10 @@ export default function SignupPage() {
         style={{ width: '100%', padding: 8, marginBottom: 16 }}
       />
 
-      <button style={{ padding: 10, width: '100%' }} onClick={handleContinue}>
+      <button
+        style={{ padding: 10, width: '100%' }}
+        onClick={handleContinue}
+      >
         Continue & Connect Google Calendar
       </button>
 
@@ -43,7 +65,9 @@ export default function SignupPage() {
 
       <button
         style={{ padding: 10, width: '100%' }}
-        onClick={() => { window.location.href = '/api/google/oauth' }}
+        onClick={() => {
+          window.location.href = '/api/google/oauth'
+        }}
       >
         Connect Google Calendar
       </button>
