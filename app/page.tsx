@@ -6,7 +6,7 @@ export default function HomePage() {
         Just send a message. We remember, schedule, and remind you automatically.
       </p>
       <ul>
-        <li>✅ WhatsApp reminders</li>
+        <li>✅ WhatsApp reminders/tasks</li>
         <li>✅ Recurring tasks (Mon / Wed / Fri)</li>
         <li>✅ Syncs to your Google Calendar</li>
         <li>✅ No app to install</li>
