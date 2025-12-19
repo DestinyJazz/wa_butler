@@ -17,7 +17,7 @@ export default function SignupPage() {
     setLoading(true)
 
     const { data, error } = await supabase
-      .from('users') // app.users (schema already set in client)
+      .from('users')
       .insert([
         {
           Name: name,
@@ -30,12 +30,25 @@ export default function SignupPage() {
     setLoading(false)
 
     if (error) {
+      console.error('Signup error:', error)
       alert(error.message)
       return
     }
 
+    console.log('User created:', data)
+    
+    // FIXED: Use user_id instead of id (matching your database column name)
+    const userId = data.user_id
+    
+    if (!userId) {
+      alert('Error: Could not get user ID')
+      return
+    }
+
+    console.log('Setting cookie with user_id:', userId)
+
     // Save user id for OAuth callback
-    document.cookie = `user_id=${data.id}; path=/`
+    document.cookie = `user_id=${userId}; path=/; max-age=${60 * 60 * 24 * 7}`
 
     // Redirect to Google OAuth
     window.location.href = '/api/google/oauth'
