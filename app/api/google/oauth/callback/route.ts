@@ -5,7 +5,7 @@ import { supabase } from '../../../../../lib/supabase'
 export async function GET(req: NextRequest) {
   try {
     const code = req.nextUrl.searchParams.get('code')
-    const userId = req.nextUrl.searchParams.get('state') // ⭐ GET USER ID
+    const userId = req.nextUrl.searchParams.get('state') // GET USER ID from state parameter
 
     if (!code || !userId) {
       return NextResponse.json(
@@ -25,12 +25,8 @@ export async function GET(req: NextRequest) {
     if (!tokens.access_token || !tokens.refresh_token) {
       throw new Error('Invalid Google token response')
     }
-    const userId = cookies().get('user_id')?.value
-
-    if (!userId) {
-      throw new Error('Missing user_id')
-    }
     
+    // Insert the Google account data with the userId from the state parameter
     const { error } = await supabase
       .from('google_accounts')
       .insert([
@@ -46,17 +42,19 @@ export async function GET(req: NextRequest) {
         },
       ])
 
-    if (error) throw error
+    if (error) {
+      console.error('Supabase insert error:', error)
+      throw error
+    }
 
     return NextResponse.redirect(
       new URL('/dashboard', req.url)
     )
   } catch (err: any) {
-    console.error(err)
+    console.error('OAuth callback error:', err)
     return NextResponse.json(
       { error: err.message },
       { status: 500 }
     )
   }
 }
-
