@@ -9,14 +9,4 @@ export const supabase = createClient(
     }
   }
   
-  await supabase.from('google_accounts').insert([{
-  user_id,
-  access_token: tokenResponse.access_token,
-  refresh_token: tokenResponse.refresh_token,
-  scope: tokenResponse.scope,
-  token_type: tokenResponse.token_type,
-  expires_at: new Date(Date.now() + tokenResponse.expires_in * 1000)
-}])
-
-
 )
