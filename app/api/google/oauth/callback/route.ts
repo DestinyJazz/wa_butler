@@ -35,5 +35,23 @@ export async function GET(req: NextRequest) {
 })
 
 const tokenResponse = await tokenRes.json()
+  if (!tokenResponse.access_token) {
+    throw new Error('Failed to retrieve access token')
+  }
 
+const user_id = Number(searchParams.get('user_id')) // or however you pass it
+
+await supabase.from('google_accounts').insert([{
+  user_id,
+  access_token: tokenResponse.access_token,
+  refresh_token: tokenResponse.refresh_token,
+  scope: tokenResponse.scope,
+  token_type: tokenResponse.token_type,
+  expires_at: new Date(Date.now() + tokenResponse.expires_in * 1000)
+}])
+
+return NextResponse.redirect(
+  new URL('/dashboard', req.url)
+)
 }
+
