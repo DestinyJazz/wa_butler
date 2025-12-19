@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { supabase } from '../../../../../lib/supabase'
+import { cookies } from 'next/headers'
+
+const cookieStore = cookies()
+cookieStore.set('user_id', String(user_id), {
+  httpOnly: true,
+  path: '/',
+})
+
 
 export async function GET(req: NextRequest) {
   try {
@@ -61,6 +69,15 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     )
   }
+  cookieStore.set('user_id', String(user_id), {
+    httpOnly: true,
+    path: '/',
+  })
+
+  return NextResponse.redirect(
+    new URL('/dashboard', req.url)
+  )
+
 }
 
 
