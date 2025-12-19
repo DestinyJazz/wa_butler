@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { supabase } from '../../../../../lib/supabase'
-import { cookies } from 'next/headers'
 
 export async function GET(req: NextRequest) {
   try {
     const code = req.nextUrl.searchParams.get('code')
-    const userIdParam = req.nextUrl.searchParams.get('state') // <-- state carries user ID
+    const userId = req.nextUrl.searchParams.get('state') // ⭐ GET USER ID
 
-    if (!code) return NextResponse.json({ error: 'Missing code' }, { status: 400 })
-    if (!userIdParam) return NextResponse.json({ error: 'Missing user_id' }, { status: 400 })
-
-    const user_id = Number(userIdParam)
+    if (!code || !userId) {
+      return NextResponse.json(
+        { error: 'Missing code or user_id' },
+        { status: 400 }
+      )
+    }
 
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID!,
@@ -19,33 +20,38 @@ export async function GET(req: NextRequest) {
       process.env.GOOGLE_REDIRECT_URI!
     )
 
-    // Exchange code for tokens
     const { tokens } = await oauth2Client.getToken(code)
-    if (!tokens.access_token || !tokens.refresh_token) throw new Error('Invalid token response from Google')
 
-    // Save tokens in Supabase
-    const { error } = await supabase.from('google_accounts').insert([
-      {
-        user_id,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        scope: tokens.scope,
-        token_type: tokens.token_type,
-        expires_at: tokens.expiry_date ? new Date(tokens.expiry_date) : null
-      }
-    ])
+    if (!tokens.access_token || !tokens.refresh_token) {
+      throw new Error('Invalid Google token response')
+    }
+
+    const { error } = await supabase
+      .from('google_accounts')
+      .insert([
+        {
+          user_id: Number(userId),
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          scope: tokens.scope,
+          token_type: tokens.token_type,
+          expires_at: tokens.expiry_date
+            ? new Date(tokens.expiry_date)
+            : null,
+        },
+      ])
 
     if (error) throw error
 
-    // Store user_id in httpOnly cookie
-    const cookieStore = cookies()
-    cookieStore.set('user_id', String(user_id), { httpOnly: true, path: '/', sameSite: 'lax' })
-
-    // Redirect to dashboard
-    return NextResponse.redirect(new URL('/dashboard', req.url))
+    return NextResponse.redirect(
+      new URL('/dashboard', req.url)
+    )
   } catch (err: any) {
-    console.error('OAuth callback error:', err)
-    return NextResponse.json({ error: err.message ?? 'OAuth failed' }, { status: 500 })
+    console.error(err)
+    return NextResponse.json(
+      { error: err.message },
+      { status: 500 }
+    )
   }
 }
 
