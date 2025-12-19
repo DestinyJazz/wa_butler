@@ -25,7 +25,12 @@ export async function GET(req: NextRequest) {
     if (!tokens.access_token || !tokens.refresh_token) {
       throw new Error('Invalid Google token response')
     }
+    const userId = cookies().get('user_id')?.value
 
+    if (!userId) {
+      throw new Error('Missing user_id')
+    }
+    
     const { error } = await supabase
       .from('google_accounts')
       .insert([
