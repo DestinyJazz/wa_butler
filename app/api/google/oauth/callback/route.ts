@@ -1,57 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '../../../../../lib/supabase'
 import { google } from 'googleapis'
+import { supabase } from '../../../../../lib/supabase'
 
 export async function GET(req: NextRequest) {
-  const code = req.nextUrl.searchParams.get('code')
-  if (!code) return NextResponse.json({ error: 'Missing code' }, { status: 400 })
+  try {
+    const code = req.nextUrl.searchParams.get('code')
+    const userIdParam = req.nextUrl.searchParams.get('user_id')
 
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID!,
-    process.env.GOOGLE_CLIENT_SECRET!,
-    process.env.GOOGLE_REDIRECT_URI!
-  )
+    if (!code) {
+      return NextResponse.json({ error: 'Missing code' }, { status: 400 })
+    }
 
-  const { tokens } = await oauth2Client.getToken(code)
+    if (!userIdParam) {
+      return NextResponse.json({ error: 'Missing user_id' }, { status: 400 })
+    }
 
-  // Store for demo; replace with real user_id from localStorage/session
-  const demoUserId = '<demo-user-id>'
-  await supabase.from('users').update({ google_token: JSON.stringify(tokens) }).eq('id', demoUserId)
+    const user_id = Number(userIdParam)
 
-  return NextResponse.redirect(
-  'https://wa-butler.vercel.app/dashboard'
-)
-  
-  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  body: new URLSearchParams({
-    code,
-    client_id: process.env.GOOGLE_CLIENT_ID!,
-    client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-    redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
-    grant_type: 'authorization_code'
-  })
-})
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID!,
+      process.env.GOOGLE_CLIENT_SECRET!,
+      process.env.GOOGLE_REDIRECT_URI!
+    )
 
-const tokenResponse = await tokenRes.json()
-  if (!tokenResponse.access_token) {
-    throw new Error('Failed to retrieve access token')
+    // Exchange code for tokens
+    const { tokens } = await oauth2Client.getToken(code)
+
+    if (!tokens.access_token || !tokens.refresh_token) {
+      throw new Error('Invalid token response from Google')
+    }
+
+    // Save tokens to Supabase
+    const { error } = await supabase
+      .from('google_accounts')
+      .insert([
+        {
+          user_id,
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          scope: tokens.scope,
+          token_type: tokens.token_type,
+          expires_at: tokens.expiry_date
+            ? new Date(tokens.expiry_date)
+            : null
+        }
+      ])
+
+    if (error) {
+      throw error
+    }
+
+    // Redirect to dashboard
+    return NextResponse.redirect(
+      new URL('/dashboard', req.url)
+    )
+  } catch (err: any) {
+    console.error('OAuth callback error:', err)
+    return NextResponse.json(
+      { error: err.message ?? 'OAuth failed' },
+      { status: 500 }
+    )
   }
-
-const user_id = Number(searchParams.get('user_id')) // or however you pass it
-
-await supabase.from('google_accounts').insert([{
-  user_id,
-  access_token: tokenResponse.access_token,
-  refresh_token: tokenResponse.refresh_token,
-  scope: tokenResponse.scope,
-  token_type: tokenResponse.token_type,
-  expires_at: new Date(Date.now() + tokenResponse.expires_in * 1000)
-}])
-
-return NextResponse.redirect(
-  new URL('/dashboard', req.url)
-)
 }
+
 
