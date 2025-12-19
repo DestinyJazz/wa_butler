@@ -18,5 +18,7 @@ export async function GET(req: NextRequest) {
   const demoUserId = '<demo-user-id>'
   await supabase.from('users').update({ google_token: JSON.stringify(tokens) }).eq('id', demoUserId)
 
-  return NextResponse.redirect('/dashboard')
+  return NextResponse.redirect(
+  'https://wa-butler.vercel.app/dashboard'
+)
 }
