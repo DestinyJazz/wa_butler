@@ -34,6 +34,6 @@ export async function GET(req: NextRequest) {
   })
 })
 
-const tokens = await tokenRes.json()
+const tokenResponse = await tokenRes.json()
 
 }
