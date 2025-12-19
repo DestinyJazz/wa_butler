@@ -4,7 +4,7 @@ import { supabase } from '../../../../../lib/supabase'
 import { cookies } from 'next/headers'
 
 const cookieStore = cookies()
-cookieStore.set('user_id', String(user_id), {
+cookieStore.set('id', String(id), {
   httpOnly: true,
   path: '/',
 })
@@ -13,7 +13,7 @@ cookieStore.set('user_id', String(user_id), {
 export async function GET(req: NextRequest) {
   try {
     const code = req.nextUrl.searchParams.get('code')
-    const userIdParam = req.nextUrl.searchParams.get('user_id')
+    const userIdParam = req.nextUrl.searchParams.get('id')
 
     if (!code) {
       return NextResponse.json({ error: 'Missing code' }, { status: 400 })
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     )
   }
-  cookieStore.set('user_id', String(user_id), {
+  cookieStore.set('id', String(id), {
     httpOnly: true,
     path: '/',
   })
