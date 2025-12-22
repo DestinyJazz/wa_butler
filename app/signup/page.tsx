@@ -37,7 +37,6 @@ export default function SignupPage() {
 
     console.log('User created:', data)
     
-    // FIXED: Use user_id instead of id (matching your database column name)
     const userId = data.user_id
     
     if (!userId) {
@@ -47,8 +46,13 @@ export default function SignupPage() {
 
     console.log('Setting cookie with user_id:', userId)
 
-    // Save user id for OAuth callback
+    // Get user's timezone
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    console.log('User timezone:', timezone)
+
+    // Save user id AND timezone for OAuth callback
     document.cookie = `user_id=${userId}; path=/; max-age=${60 * 60 * 24 * 7}`
+    document.cookie = `user_timezone=${encodeURIComponent(timezone)}; path=/; max-age=${60 * 60 * 24 * 7}`
 
     // Redirect to Google OAuth
     window.location.href = '/api/google/oauth'
