@@ -1,48 +1,45 @@
-export default function HomePage() {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto' }}>
-      <h1>Reminders from WhatsApp → Google Calendar</h1>
-      <p>
-        Just send a message. We remember, schedule, and remind you automatically.
-      </p>
-      <ul>
-        <li>✅ WhatsApp reminders/tasks</li>
-        <li>✅ Recurring tasks (Mon / Wed / Fri)</li>
-        <li>✅ Syncs to your Google Calendar</li>
-        <li>✅ No app to install</li>
-      </ul>
-      
-      <div style={{ display: 'flex', gap: '12px', marginTop: 24, flexWrap: 'wrap' }}>
-        <a href="/signup" style={{ flex: '1 1 200px', textDecoration: 'none' }}>
-          <button style={{ 
-            width: '100%',
-            padding: '12px 20px', 
-            fontSize: 16,
-            background: '#000',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 4,
-            cursor: 'pointer'
-          }}>
-            Get Started – Free
-          </button>
-        </a>
-        
-        <a href="/login" style={{ flex: '1 1 200px', textDecoration: 'none' }}>
-          <button style={{ 
-            width: '100%',
-            padding: '12px 20px', 
-            fontSize: 16,
-            background: '#fff',
-            color: '#000',
-            border: '1px solid #ccc',
-            borderRadius: 4,
-            cursor: 'pointer'
-          }}>
-            Login
-          </button>
-        </a>
-      </div>
-    </div>
+    <html lang="en">
+      <body style={{ fontFamily: 'system-ui', margin: 0, padding: 0 }}>
+        <header style={{ 
+          padding: '16px 24px', 
+          borderBottom: '1px solid #eee',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <strong style={{ fontSize: '18px' }}>🧠 WhatsApp Butler</strong>
+          
+          <nav style={{ display: 'flex', gap: '16px' }}>
+            <a 
+              href="/" 
+              style={{ 
+                textDecoration: 'none', 
+                color: '#000',
+                padding: '8px 16px',
+                borderRadius: '4px',
+              }}
+            >
+              Home
+            </a>
+            <a 
+              href="https://docs.example.com" 
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ 
+                textDecoration: 'none', 
+                color: '#000',
+                padding: '8px 16px',
+                borderRadius: '4px',
+              }}
+            >
+              Docs ↗
+            </a>
+          </nav>
+        </header>
+        <main style={{ padding: '24px' }}>{children}</main>
+      </body>
+    </html>
   )
 }
