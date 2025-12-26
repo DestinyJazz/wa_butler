@@ -1,7 +1,7 @@
 // app/api/whatsapp/pending-welcome/route.ts
 // This stores users who need welcome messages
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '../../../lib/supabase'
+import { supabase } from '../../../../lib/supabase'
 
 // GET - Fetch users who need welcome messages (your internal system calls this)
 export async function GET(req: NextRequest) {
