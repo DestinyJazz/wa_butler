@@ -54,6 +54,14 @@ export async function GET(req: NextRequest) {
 
     console.log('✅ Got tokens from Google successfully')
     
+    // Set credentials and fetch user's Google email
+    oauth2Client.setCredentials(tokens)
+    const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client })
+    const { data: userInfo } = await oauth2.userinfo.get()
+    const googleEmail = userInfo.email || null
+    
+    console.log('Google email:', googleEmail)
+    
     const userIdNumber = Number(userId)
     console.log('Converted userId to number:', userIdNumber)
     
@@ -68,7 +76,8 @@ export async function GET(req: NextRequest) {
       scope: tokens.scope || '',
       token_type: tokens.token_type || 'Bearer',
       expires_at: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null,
-      timezone: timezone, // Store the timezone
+      timezone: timezone,
+      email: googleEmail, // Store the Google email
     }
     
     console.log('Attempting to insert into google_accounts with timezone:', timezone)
@@ -83,7 +92,23 @@ export async function GET(req: NextRequest) {
       throw new Error(`Database error: ${error.message}`)
     }
 
-    console.log('✅ Successfully inserted google account with timezone')
+    console.log('✅ Successfully inserted google account with timezone and email')
+
+    // Also update the user's timezone and email in the users table
+    const { error: userUpdateError } = await supabase
+      .from('users')
+      .update({ 
+        timezone: timezone,
+        email: googleEmail 
+      })
+      .eq('user_id', userIdNumber)
+
+    if (userUpdateError) {
+      console.error('⚠️ Warning: Could not update user data:', userUpdateError)
+      // Don't throw - this is not critical
+    } else {
+      console.log('✅ Updated user timezone and email in users table')
+    }
 
     // Make sure cookie is set before redirect
     const response = NextResponse.redirect(new URL('/dashboard', req.url))
