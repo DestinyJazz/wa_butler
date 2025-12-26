@@ -34,7 +34,10 @@ export async function GET(req: NextRequest) {
 
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
-    scope: ['https://www.googleapis.com/auth/calendar.events'],
+    scope: [
+      'https://www.googleapis.com/auth/calendar.events',
+      'https://www.googleapis.com/auth/userinfo.email'
+    ],
     prompt: 'consent',
     state: stateString, // Pass encoded data as state
   })
