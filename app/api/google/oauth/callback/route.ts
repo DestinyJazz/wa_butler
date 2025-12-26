@@ -30,8 +30,9 @@ export async function GET(req: NextRequest) {
       console.log('Decoded state - userId:', userId, 'timezone:', timezone)
     } catch (err) {
       // Fallback: try cookies if state parsing fails
-      userId = cookies().get('user_id')?.value || ''
-      timezone = cookies().get('user_timezone')?.value || 'UTC'
+      const cookieStore = await cookies()
+      userId = cookieStore.get('user_id')?.value || ''
+      timezone = cookieStore.get('user_timezone')?.value || 'UTC'
       console.log('Using fallback from cookies - userId:', userId, 'timezone:', timezone)
     }
 
