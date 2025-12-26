@@ -101,19 +101,25 @@ export async function GET(req: NextRequest) {
     console.log('✅ Successfully inserted google account with timezone and email')
 
     // Also update the user's timezone and email in the users table
-    const { error: userUpdateError } = await supabase
+    console.log('🔄 Attempting to update users table with user_id:', userIdNumber)
+    
+    const { data: updateData, error: userUpdateError } = await supabase
       .from('users')
       .update({ 
         timezone: timezone,
         email: googleEmail 
       })
       .eq('user_id', userIdNumber)
+      .select()
 
     if (userUpdateError) {
-      console.error('⚠️ Warning: Could not update user data:', userUpdateError)
+      console.error('❌ ERROR: Could not update user data:', userUpdateError)
+      console.error('Full error details:', JSON.stringify(userUpdateError, null, 2))
       // Don't throw - this is not critical
+    } else if (!updateData || updateData.length === 0) {
+      console.error('⚠️ WARNING: Update returned no rows - user_id might not exist:', userIdNumber)
     } else {
-      console.log('✅ Updated user timezone and email in users table')
+      console.log('✅ Successfully updated user timezone and email in users table:', updateData)
     }
 
     // Make sure cookie is set before redirect
