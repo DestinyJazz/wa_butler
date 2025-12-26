@@ -12,8 +12,8 @@ export default function HomePage() {
         <li>✅ No app to install</li>
       </ul>
       
-      <div style={{ display: 'flex', gap: '12px', marginTop: 24 }}>
-        <a href="/signup" style={{ flex: 1 }}>
+      <div style={{ display: 'flex', gap: '12px', marginTop: 24, flexWrap: 'wrap' }}>
+        <a href="/signup" style={{ flex: '1 1 200px', textDecoration: 'none' }}>
           <button style={{ 
             width: '100%',
             padding: '12px 20px', 
@@ -28,7 +28,7 @@ export default function HomePage() {
           </button>
         </a>
         
-        <a href="/login" style={{ flex: 1 }}>
+        <a href="/login" style={{ flex: '1 1 200px', textDecoration: 'none' }}>
           <button style={{ 
             width: '100%',
             padding: '12px 20px', 
