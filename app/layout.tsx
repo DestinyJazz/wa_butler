@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               Home
             </a>
             <a 
-              href="https://docs.example.com" 
+              href="https://www.notion.so/WhatsApp-Butler-2d5ef8799fc880df9a6af06a757c3745?source=copy_link" 
               target="_blank"
               rel="noopener noreferrer"
               style={{ 
