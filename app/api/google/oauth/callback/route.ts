@@ -55,13 +55,18 @@ export async function GET(req: NextRequest) {
 
     console.log('✅ Got tokens from Google successfully')
     
-    // Set credentials and fetch user's Google email
-    oauth2Client.setCredentials(tokens)
-    const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client })
-    const { data: userInfo } = await oauth2.userinfo.get()
-    const googleEmail = userInfo.email || null
-    
-    console.log('Google email:', googleEmail)
+    // Fetch user's Google email using the access token
+    let googleEmail = null
+    try {
+      oauth2Client.setCredentials(tokens)
+      const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client })
+      const { data: userInfo } = await oauth2.userinfo.get()
+      googleEmail = userInfo.email || null
+      console.log('Google email:', googleEmail)
+    } catch (emailError: any) {
+      console.error('⚠️ Warning: Could not fetch user email:', emailError.message)
+      // Continue without email - not critical
+    }
     
     const userIdNumber = Number(userId)
     console.log('Converted userId to number:', userIdNumber)
