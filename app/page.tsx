@@ -159,7 +159,7 @@ export default function HomePage() {
                 e.currentTarget.style.background = 'transparent'
               }}
               >
-                View Demo
+                Docs
               </button>
             </a>
           </div>
@@ -304,8 +304,8 @@ export default function HomePage() {
               },
               {
                 icon: '🔒',
-                title: 'Bank-Level Security',
-                desc: 'End-to-end encryption. Your data stays private.',
+                title: 'Secure',
+                desc: 'Your data stays private.',
                 gradient: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, transparent 100%)',
               },
             ].map((feature, i) => (
