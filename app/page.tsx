@@ -84,7 +84,7 @@ export default function HomePage() {
             color: '#8B92F6',
             fontWeight: '600',
           }}>
-            ✨ AI-Powered Task Management
+            ✨ WhatsApp AI-Powered Task Management
           </div>
 
           <h1 style={{
@@ -108,7 +108,7 @@ export default function HomePage() {
             lineHeight: '1.6',
           }}>
             Transform casual WhatsApp messages into perfectly organized calendar events. 
-            Your personal AI assistant that understands natural language.
+            Your personal WhatsApp assistant that understands natural language.
           </p>
 
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -172,9 +172,8 @@ export default function HomePage() {
             flexWrap: 'wrap',
           }}>
             {[
-              { label: 'Active Users', value: '500+' },
-              { label: 'Tasks Created', value: '10K+' },
-              { label: 'Success Rate', value: '99.9%' },
+              { label: 'Active Users', value: '50+' },
+              { label: 'Tasks Created', value: '1K+' },
             ].map((stat, i) => (
               <div key={i}>
                 <div style={{ 
@@ -220,7 +219,7 @@ export default function HomePage() {
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
           <p style={{ color: '#666', fontSize: '14px', marginBottom: '32px', textTransform: 'uppercase', letterSpacing: '2px' }}>
-            Trusted by productivity enthusiasts
+            The Power of Automation
           </p>
           <div style={{ 
             display: 'flex', 
@@ -230,7 +229,7 @@ export default function HomePage() {
             flexWrap: 'wrap',
             opacity: 0.5,
           }}>
-            {['Google Calendar', 'WhatsApp', 'Vercel', 'Supabase'].map((brand, i) => (
+            {['Google Calendar', 'WhatsApp', 'AI-Models'].map((brand, i) => (
               <div key={i} style={{ 
                 fontSize: '20px', 
                 fontWeight: '700',
@@ -443,7 +442,7 @@ export default function HomePage() {
             </p>
             <div>
               <div style={{ fontWeight: '600', fontSize: '18px' }}>Sarah Chen</div>
-              <div style={{ color: '#999', fontSize: '14px', marginTop: '4px' }}>Product Manager</div>
+              <div style={{ color: '#999', fontSize: '14px', marginTop: '4px' }}>Heavy WhatsApp User</div>
             </div>
           </div>
         </div>
