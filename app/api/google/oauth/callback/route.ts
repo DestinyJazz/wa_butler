@@ -189,6 +189,24 @@ export async function GET(req: NextRequest) {
         stack: err.stack
       },
       { status: 500 }
+      // After getting tokens
+oauth2Client.setCredentials(tokens)
+const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client })
+const { data: userInfo } = await oauth2.userinfo.get()
+const googleEmail = userInfo.email
+
+console.log('✅ Token belongs to:', googleEmail)
+
+// Store in database
+await supabase
+  .from('google_accounts')
+  .update({
+    access_token: tokens.access_token,
+    refresh_token: tokens.refresh_token,
+    email: googleEmail, // This must match the actual token owner
+    expires_at: new Date(tokens.expiry_date).toISOString()
+  })
+  .eq('user_id', userId)
     )
   }
 }
