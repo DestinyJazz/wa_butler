@@ -1,3 +1,4 @@
+// app/api/google/oauth/callback/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { supabase } from '../../../../../lib/supabase'
@@ -40,6 +41,11 @@ export async function GET(req: NextRequest) {
       throw new Error('Could not retrieve user_id from state or cookies')
     }
 
+    // Check if this is a reconnection
+    const cookieStore = await cookies()
+    const isReconnecting = cookieStore.get('reconnecting')?.value === 'true'
+    console.log('Is reconnecting:', isReconnecting)
+
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID!,
       process.env.GOOGLE_CLIENT_SECRET!,
@@ -65,7 +71,6 @@ export async function GET(req: NextRequest) {
       console.log('Google email:', googleEmail)
     } catch (emailError: any) {
       console.error('⚠️ Warning: Could not fetch user email:', emailError.message)
-      // Continue without email - not critical
     }
     
     const userIdNumber = Number(userId)
@@ -75,33 +80,64 @@ export async function GET(req: NextRequest) {
       throw new Error(`Invalid user_id: ${userId} cannot be converted to number`)
     }
 
-    const insertData = {
-      user_id: userIdNumber,
+    const tokenData = {
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,
       scope: tokens.scope || '',
       token_type: tokens.token_type || 'Bearer',
       expires_at: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null,
       timezone: timezone,
-      email: googleEmail, // Store the Google email
+      email: googleEmail,
     }
-    
-    console.log('Attempting to insert into google_accounts with timezone:', timezone)
-    
-    const { data, error } = await supabase
+
+    // Check if user already has a google account (reconnection scenario)
+    const { data: existingAccount } = await supabase
       .from('google_accounts')
-      .insert([insertData])
-      .select()
+      .select('user_id')
+      .eq('user_id', userIdNumber)
+      .maybeSingle()
 
-    if (error) {
-      console.error('❌ Supabase insert error:', JSON.stringify(error, null, 2))
-      throw new Error(`Database error: ${error.message}`)
+    if (existingAccount || isReconnecting) {
+      // UPDATE existing google_accounts record
+      console.log('🔄 Reconnecting - updating existing record')
+      
+      const { data, error } = await supabase
+        .from('google_accounts')
+        .update(tokenData)
+        .eq('user_id', userIdNumber)
+        .select()
+
+      if (error) {
+        console.error('❌ Supabase update error:', JSON.stringify(error, null, 2))
+        throw new Error(`Database error: ${error.message}`)
+      }
+
+      console.log('✅ Successfully updated google account tokens')
+      
+    } else {
+      // INSERT new record (first time signup)
+      console.log('➕ First time signup - inserting new record')
+      
+      const insertData = {
+        user_id: userIdNumber,
+        ...tokenData,
+      }
+      
+      const { data, error } = await supabase
+        .from('google_accounts')
+        .insert([insertData])
+        .select()
+
+      if (error) {
+        console.error('❌ Supabase insert error:', JSON.stringify(error, null, 2))
+        throw new Error(`Database error: ${error.message}`)
+      }
+
+      console.log('✅ Successfully inserted google account')
     }
 
-    console.log('✅ Successfully inserted google account with timezone and email')
-
-    // Also update the user's timezone and email in the users table
-    console.log('🔄 Attempting to update users table with user_id:', userIdNumber)
+    // Update user's timezone and email in users table
+    console.log('🔄 Updating users table with timezone and email')
     
     const { data: updateData, error: userUpdateError } = await supabase
       .from('users')
@@ -114,20 +150,30 @@ export async function GET(req: NextRequest) {
 
     if (userUpdateError) {
       console.error('❌ ERROR: Could not update user data:', userUpdateError)
-      console.error('Full error details:', JSON.stringify(userUpdateError, null, 2))
-      // Don't throw - this is not critical
     } else if (!updateData || updateData.length === 0) {
       console.error('⚠️ WARNING: Update returned no rows - user_id might not exist:', userIdNumber)
     } else {
-      console.log('✅ Successfully updated user timezone and email in users table:', updateData)
+      console.log('✅ Successfully updated user timezone and email')
     }
 
-    // Make sure cookie is set before redirect
-    const response = NextResponse.redirect(new URL('/dashboard', req.url))
+    // Prepare response with success message
+    const redirectUrl = isReconnecting 
+      ? '/dashboard?reconnected=true' 
+      : '/dashboard'
+    
+    const response = NextResponse.redirect(new URL(redirectUrl, req.url))
+    
+    // Set cookies
     response.cookies.set('user_id', userId, { 
       path: '/',
       httpOnly: false,
       maxAge: 60 * 60 * 24 * 7 // 7 days
+    })
+    
+    // Clear reconnecting flag
+    response.cookies.set('reconnecting', '', { 
+      path: '/',
+      maxAge: 0 // Delete cookie
     })
     
     console.log('=== OAuth Callback Success ===')
