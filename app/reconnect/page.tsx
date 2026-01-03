@@ -27,16 +27,8 @@ export default function ReconnectPage() {
       // Query database to find user with matching email AND phone
       const { data, error: dbError } = await supabase
         .from('google_accounts')
-        .select(`
-          user_id,
-          email,
-          users!inner (
-            Phone_number,
-            Name
-          )
-        `)
+        .select('user_id, email')
         .eq('email', email.trim())
-        .eq('users.Phone_number', phone.trim())
         .maybeSingle()
 
       if (dbError) {
@@ -47,6 +39,20 @@ export default function ReconnectPage() {
       }
 
       if (!data) {
+        setError('No account found with this email')
+        setVerifying(false)
+        return
+      }
+
+      // Now check if phone matches in users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('user_id, Name, Phone_number')
+        .eq('user_id', data.user_id)
+        .eq('Phone_number', phone.trim())
+        .maybeSingle()
+
+      if (userError || !userData) {
         setError('No account found with this email and phone number combination')
         setVerifying(false)
         return
@@ -54,8 +60,8 @@ export default function ReconnectPage() {
 
       // User verified!
       setVerified(true)
-      setUserId(data.user_id)
-      setUserName(data.users.Name)
+      setUserId(userData.user_id)
+      setUserName(userData.Name)
       setError('')
 
       // Set cookie for OAuth callback
