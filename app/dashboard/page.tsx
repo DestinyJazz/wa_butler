@@ -142,13 +142,6 @@ export default async function DashboardPage({
               borderRadius: 8,
               cursor: 'pointer',
               fontWeight: '600',
-              transition: 'transform 0.2s',
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)'
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)'
             }}
           >
             🔄 Reconnect Google Calendar
