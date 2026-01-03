@@ -76,6 +76,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               Docs ↗
             </a>
             <a 
+              href="/reconnect"
+              style={{ 
+                textDecoration: 'none', 
+                color: '#fff',
+                fontSize: '16px',
+                fontWeight: '500',
+                transition: 'opacity 0.2s',
+                opacity: 0.8,
+              }}
+            >
+              Reconnect
+            </a>
+            <a 
               href="/signup"
               style={{ textDecoration: 'none' }}
             >
