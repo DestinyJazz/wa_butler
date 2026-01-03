@@ -14,38 +14,32 @@ export async function GET(req: NextRequest) {
     console.log('State string:', stateString)
 
     if (!code || !stateString) {
-      return NextResponse.json(
-        { error: 'Missing code or state' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Missing code or state' }, { status: 400 })
     }
 
-    // Decode the state parameter to get userId and timezone
-    let userId: string
-    let timezone: string
-    
+    // Decode state (fallback to cookies if needed)
+    let userId = ''
+    let timezone = 'UTC'
     try {
       const stateData = JSON.parse(Buffer.from(stateString, 'base64').toString())
       userId = stateData.userId
       timezone = stateData.timezone || 'UTC'
-      console.log('Decoded state - userId:', userId, 'timezone:', timezone)
-    } catch (err) {
-      // Fallback: try cookies if state parsing fails
+      console.log('Decoded state → userId:', userId, '| timezone:', timezone)
+    } catch {
       const cookieStore = await cookies()
       userId = cookieStore.get('user_id')?.value || ''
       timezone = cookieStore.get('user_timezone')?.value || 'UTC'
-      console.log('Using fallback from cookies - userId:', userId, 'timezone:', timezone)
+      console.log('Fallback from cookies → userId:', userId, '| timezone:', timezone)
     }
 
-    if (!userId) {
-      throw new Error('Could not retrieve user_id from state or cookies')
-    }
+    if (!userId) throw new Error('Could not retrieve user_id from state or cookies')
 
-    // Check if this is a reconnection
+    // Check if reconnecting
     const cookieStore = await cookies()
     const isReconnecting = cookieStore.get('reconnecting')?.value === 'true'
     console.log('Is reconnecting:', isReconnecting)
 
+    // Exchange authorization code for tokens
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID!,
       process.env.GOOGLE_CLIENT_SECRET!,
@@ -54,159 +48,107 @@ export async function GET(req: NextRequest) {
 
     console.log('Getting tokens from Google...')
     const { tokens } = await oauth2Client.getToken(code)
-
     if (!tokens.access_token || !tokens.refresh_token) {
-      throw new Error('Invalid Google token response - missing tokens')
+      throw new Error('Invalid Google token response (missing access or refresh token)')
     }
 
-    console.log('✅ Got tokens from Google successfully')
-    
-    // Fetch user's Google email using the access token
-    let googleEmail = null
+    console.log('✅ Successfully retrieved tokens')
+
+    // Fetch user’s Google account email
+    let googleEmail: string | null = null
     try {
       oauth2Client.setCredentials(tokens)
       const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client })
       const { data: userInfo } = await oauth2.userinfo.get()
       googleEmail = userInfo.email || null
       console.log('Google email:', googleEmail)
-    } catch (emailError: any) {
-      console.error('⚠️ Warning: Could not fetch user email:', emailError.message)
-    }
-    
-    const userIdNumber = Number(userId)
-    console.log('Converted userId to number:', userIdNumber)
-    
-    if (isNaN(userIdNumber)) {
-      throw new Error(`Invalid user_id: ${userId} cannot be converted to number`)
+    } catch (emailErr: any) {
+      console.error('⚠️ Could not fetch user email:', emailErr.message)
     }
 
+    const userIdNumber = Number(userId)
+    if (isNaN(userIdNumber)) {
+      throw new Error(`Invalid user_id (${userId}) — cannot convert to number`)
+    }
+
+    // Prepare data for Supabase
     const tokenData = {
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,
       scope: tokens.scope || '',
       token_type: tokens.token_type || 'Bearer',
-      expires_at: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null,
-      timezone: timezone,
+      expires_at: tokens.expiry_date
+        ? new Date(tokens.expiry_date).toISOString()
+        : null,
+      timezone,
       email: googleEmail,
     }
 
-    // Check if user already has a google account (reconnection scenario)
-    const { data: existingAccount } = await supabase
+    // Upsert (insert or update) record in google_accounts
+    const { data: existing } = await supabase
       .from('google_accounts')
       .select('user_id')
       .eq('user_id', userIdNumber)
       .maybeSingle()
 
-    if (existingAccount || isReconnecting) {
-      // UPDATE existing google_accounts record
-      console.log('🔄 Reconnecting - updating existing record')
-      
-      const { data, error } = await supabase
+    if (existing || isReconnecting) {
+      console.log('🔄 Updating existing google_accounts record')
+      const { error } = await supabase
         .from('google_accounts')
         .update(tokenData)
         .eq('user_id', userIdNumber)
-        .select()
-
-      if (error) {
-        console.error('❌ Supabase update error:', JSON.stringify(error, null, 2))
-        throw new Error(`Database error: ${error.message}`)
-      }
-
-      console.log('✅ Successfully updated google account tokens')
-      
+      if (error) throw new Error(`Supabase update error: ${error.message}`)
+      console.log('✅ Updated Google account successfully')
     } else {
-      // INSERT new record (first time signup)
-      console.log('➕ First time signup - inserting new record')
-      
-      const insertData = {
-        user_id: userIdNumber,
-        ...tokenData,
-      }
-      
-      const { data, error } = await supabase
+      console.log('➕ Inserting new google_accounts record')
+      const { error } = await supabase
         .from('google_accounts')
-        .insert([insertData])
-        .select()
-
-      if (error) {
-        console.error('❌ Supabase insert error:', JSON.stringify(error, null, 2))
-        throw new Error(`Database error: ${error.message}`)
-      }
-
-      console.log('✅ Successfully inserted google account')
+        .insert([{ user_id: userIdNumber, ...tokenData }])
+      if (error) throw new Error(`Supabase insert error: ${error.message}`)
+      console.log('✅ Inserted new Google account successfully')
     }
 
-    // Update user's timezone and email in users table
-    console.log('🔄 Updating users table with timezone and email')
-    
-    const { data: updateData, error: userUpdateError } = await supabase
+    // Update timezone + email in users table
+    console.log('🔄 Updating users table...')
+    const { error: userUpdateError } = await supabase
       .from('users')
-      .update({ 
-        timezone: timezone,
-        email: googleEmail 
-      })
+      .update({ timezone, email: googleEmail })
       .eq('user_id', userIdNumber)
-      .select()
 
     if (userUpdateError) {
-      console.error('❌ ERROR: Could not update user data:', userUpdateError)
-    } else if (!updateData || updateData.length === 0) {
-      console.error('⚠️ WARNING: Update returned no rows - user_id might not exist:', userIdNumber)
+      console.error('⚠️ Could not update user record:', userUpdateError.message)
     } else {
-      console.log('✅ Successfully updated user timezone and email')
+      console.log('✅ Updated user timezone and email')
     }
 
-    // Prepare response with success message
-    const redirectUrl = isReconnecting 
-      ? '/dashboard?reconnected=true' 
+    // Redirect back to dashboard
+    const redirectUrl = isReconnecting
+      ? '/dashboard?reconnected=true'
       : '/dashboard'
-    
     const response = NextResponse.redirect(new URL(redirectUrl, req.url))
-    
+
     // Set cookies
-    response.cookies.set('user_id', userId, { 
+    response.cookies.set('user_id', userId, {
       path: '/',
       httpOnly: false,
-      maxAge: 60 * 60 * 24 * 7 // 7 days
+      maxAge: 60 * 60 * 24 * 7, // 7 days
     })
-    
-    // Clear reconnecting flag
-    response.cookies.set('reconnecting', '', { 
+    response.cookies.set('reconnecting', '', {
       path: '/',
-      maxAge: 0 // Delete cookie
+      maxAge: 0, // delete flag
     })
-    
-    console.log('=== OAuth Callback Success ===')
+
+    console.log('=== ✅ OAuth Callback Completed Successfully ===')
     return response
-    
   } catch (err: any) {
     console.error('❌ OAuth callback error:', err)
-    console.error('Error stack:', err.stack)
     return NextResponse.json(
-      { 
-        error: err.message,
-        type: err.constructor.name,
-        stack: err.stack
+      {
+        error: err.message || 'Unexpected error during OAuth callback',
+        stack: err.stack,
+        type: err.constructor?.name || 'Error',
       },
       { status: 500 }
-      // After getting tokens
-oauth2Client.setCredentials(tokens)
-const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client })
-const { data: userInfo } = await oauth2.userinfo.get()
-const googleEmail = userInfo.email
-
-console.log('✅ Token belongs to:', googleEmail)
-
-// Store in database
-await supabase
-  .from('google_accounts')
-  .update({
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
-    email: googleEmail, // This must match the actual token owner
-    expires_at: new Date(tokens.expiry_date).toISOString()
-  })
-  .eq('user_id', userId)
     )
   }
 }
