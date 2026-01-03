@@ -86,7 +86,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 opacity: 0.8,
               }}
             >
-              Reconnect
+              Reconnect Google Calendar
             </a>
             <a 
               href="/signup"
