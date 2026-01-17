@@ -93,7 +93,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             >
               Docs ↗
             </a>
-
+            <a href="/login" style={{ color: '#fff', ... }}>
+              Login
+                </a>
             <a
               href="/reconnect"
               style={{
