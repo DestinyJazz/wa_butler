@@ -209,9 +209,9 @@ export default function DashboardPage() {
   }
 
   async function handleDeleteTask(id: string): Promise<void> {
-    const res = await fetch(`/api/tasks?id=${encodeURIComponent(uuid)}`, { method: 'DELETE' })
+    const res = await fetch(`/api/tasks?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
     if (res.ok) {
-      setTasks((prev) => prev.filter((t) => t.id !== uuid))
+      setTasks((prev) => prev.filter((t) => t.id !== id))
       setTotal((prev) => prev - 1)
       setDeleteToast('Task deleted')
       setTimeout(() => setDeleteToast(''), 3000)
