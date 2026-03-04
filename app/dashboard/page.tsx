@@ -27,15 +27,18 @@ interface GoogleData {
   expires_at?: string
 }
 
-function TaskCard({ task, onDelete }: { task: Task; onDelete: (id: string) => void }) {
+function TaskCard({ task, onDelete }: { task: Task; onDelete: (id: string) => Promise<void> }) {
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   const handleDelete = async () => {
     setDeleting(true)
-    await onDelete(task.uuid)
-    setDeleting(false)
-    setConfirming(false)
+    try {
+      await onDelete(task.uuid)
+    } finally {
+      setDeleting(false)
+      setConfirming(false)
+    }
   }
 
   return (
@@ -94,22 +97,16 @@ function TaskCard({ task, onDelete }: { task: Task; onDelete: (id: string) => vo
           </p>
         )}
 
-        {/* Confirmation message */}
-        {task.confirmation_msg && (
-          <p style={{
-            fontSize: '13px', color: '#666', margin: '0 0 10px 0',
-            padding: '8px 12px',
-            background: 'rgba(255,255,255,0.03)',
-            borderRadius: '8px',
-            lineHeight: '1.5',
-            fontStyle: 'italic',
-          }}>
-            💬 {task.confirmation_msg}
-          </p>
-        )}
-
         {/* Meta row */}
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+          {task.created_at && (
+            <span style={{ fontSize: '13px', color: '#666' }}>
+              📅 {new Date(task.created_at).toLocaleString('en-MY', {
+                day: 'numeric', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+              })}
+            </span>
+          )}
           {task.location && (
             <span style={{ fontSize: '13px', color: '#666' }}>📍 {task.location}</span>
           )}
@@ -122,48 +119,53 @@ function TaskCard({ task, onDelete }: { task: Task; onDelete: (id: string) => vo
               🔗 {task.URL_category || 'Link'}
             </a>
           )}
-          {task.created_at && (
-            <span style={{ fontSize: '12px', color: '#555' }}>
-              Created {new Date(task.created_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}
-            </span>
-          )}
         </div>
       </div>
 
       {/* Delete button */}
       <div style={{ flexShrink: 0 }}>
         {!confirming ? (
-          <button onClick={() => setConfirming(true)} style={{
-            padding: '8px 14px', background: 'transparent', color: '#666',
-            border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-            fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s',
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.borderColor = '#ef4444'
-            e.currentTarget.style.color = '#ef4444'
-            e.currentTarget.style.background = 'rgba(239,68,68,0.08)'
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-            e.currentTarget.style.color = '#666'
-            e.currentTarget.style.background = 'transparent'
-          }}>
+          <button
+            onClick={() => setConfirming(true)}
+            style={{
+              padding: '8px 14px', background: 'transparent', color: '#666',
+              border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+              fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s',
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.borderColor = '#ef4444'
+              e.currentTarget.style.color = '#ef4444'
+              e.currentTarget.style.background = 'rgba(239,68,68,0.08)'
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+              e.currentTarget.style.color = '#666'
+              e.currentTarget.style.background = 'transparent'
+            }}
+          >
             🗑 Delete
           </button>
         ) : (
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={handleDelete} disabled={deleting} style={{
-              padding: '8px 14px', background: '#ef4444', color: '#fff',
-              border: 'none', borderRadius: '8px', fontSize: '13px',
-              fontWeight: '600', cursor: deleting ? 'not-allowed' : 'pointer',
-            }}>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              style={{
+                padding: '8px 14px', background: '#ef4444', color: '#fff',
+                border: 'none', borderRadius: '8px', fontSize: '13px',
+                fontWeight: '600', cursor: deleting ? 'not-allowed' : 'pointer',
+              }}
+            >
               {deleting ? '...' : 'Confirm'}
             </button>
-            <button onClick={() => setConfirming(false)} style={{
-              padding: '8px 12px', background: 'transparent', color: '#888',
-              border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-              fontSize: '13px', cursor: 'pointer',
-            }}>
+            <button
+              onClick={() => setConfirming(false)}
+              style={{
+                padding: '8px 12px', background: 'transparent', color: '#888',
+                border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+                fontSize: '13px', cursor: 'pointer',
+              }}
+            >
               Cancel
             </button>
           </div>
@@ -179,10 +181,10 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [tasksLoading, setTasksLoading] = useState(true)
-  const [error, setError] = useState('')
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [deleteToast, setDeleteToast] = useState('')
   const [reconnected, setReconnected] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -223,12 +225,15 @@ export default function DashboardPage() {
     finally { setTasksLoading(false) }
   }
 
-  async function handleDeleteTask(uuid: string) {
-    const res = await fetch(`/api/tasks?id=${uuid}`, { method: 'DELETE' })
+  async function handleDeleteTask(uuid: string): Promise<void> {
+    const res = await fetch(`/api/tasks?id=${encodeURIComponent(uuid)}`, { method: 'DELETE' })
     if (res.ok) {
       setTasks((prev) => prev.filter((t) => t.uuid !== uuid))
       setDeleteToast('Task deleted')
       setTimeout(() => setDeleteToast(''), 3000)
+    } else {
+      const data = await res.json()
+      alert('Failed to delete: ' + (data.error || 'Unknown error'))
     }
   }
 
@@ -271,14 +276,12 @@ export default function DashboardPage() {
       )}
 
       <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-        {/* Reconnected banner */}
         {reconnected && (
           <div style={{ padding: '14px 20px', marginBottom: '28px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '12px', color: '#10b981' }}>
             ✅ Successfully reconnected your Google Calendar!
           </div>
         )}
 
-        {/* Header */}
         <div style={{ marginBottom: '36px' }}>
           <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '6px', background: 'linear-gradient(135deg, #fff 0%, #8B92F6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             {userData ? `Hey, ${userData.Name.split(' ')[0]} 👋` : 'Dashboard'}
@@ -303,7 +306,6 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Google not connected nudge */}
         {!googleData && (
           <div style={{ padding: '20px 24px', marginBottom: '28px', background: 'rgba(239, 68, 68, 0.06)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
             <div>
@@ -345,7 +347,7 @@ export default function DashboardPage() {
           ) : filteredTasks.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px' }}>
               <div style={{ fontSize: '48px', marginBottom: '16px' }}>✨</div>
-              <p style={{ color: '#666', fontSize: '16px', marginBottom: '8px' }}>No tasks yet</p>
+              <p style={{ color: '#666', fontSize: '16px', marginBottom: '8px' }}>No tasks found</p>
               <p style={{ color: '#444', fontSize: '14px' }}>Send a message on WhatsApp to create your first task!</p>
             </div>
           ) : (
@@ -357,7 +359,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Footer */}
         <div style={{ marginTop: '40px', padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px' }}>
           <a href="/reconnect">
             <button style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.06)', color: '#aaa', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '14px', cursor: 'pointer' }}>
