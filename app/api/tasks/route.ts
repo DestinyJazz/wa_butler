@@ -59,7 +59,7 @@ export async function DELETE(req: NextRequest) {
     const { error: deleteError, count } = await supabase
       .from('tasks')
       .delete({ count: 'exact' })
-      .eq('uuid', taskId)
+      .eq('id', taskId)
       .eq('user_id', Number(userId))
 
     console.log('Delete result — error:', deleteError, 'count:', count)
