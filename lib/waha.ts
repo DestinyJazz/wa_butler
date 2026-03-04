@@ -12,7 +12,7 @@ export async function sendWhatsAppOTP(phone: string, otp: string): Promise<void>
   const message = `Your WhatsApp Butler verification code is: *${otp}*\n\nThis code expires in 5 minutes. Do not share it with anyone.`
 
   // WAHA v2 uses /api/{session}/sendText
-  const endpoint = `${wahaUrl}/api/${wahaSession}/sendText`
+  const endpoint = `${wahaUrl}/api/sendText`
 
   console.log('Sending to WAHA endpoint:', endpoint)
 
