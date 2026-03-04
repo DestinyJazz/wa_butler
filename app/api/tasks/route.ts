@@ -8,39 +8,33 @@ export async function GET(req: NextRequest) {
     const cookieStore = await cookies()
     const userId = cookieStore.get('user_id')?.value
 
-    console.log('=== Tasks API ===')
-    console.log('user_id from cookie:', userId)
-
     if (!userId) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    // First, fetch a sample row to see what user_id looks like in the table
-    const { data: sample, error: sampleError } = await supabase
-      .from('tasks')
-      .select('uuid, user_id, title')
-      .limit(3)
+    const page = parseInt(req.nextUrl.searchParams.get('page') || '1')
+    const limit = 10
+    const from = (page - 1) * limit
+    const to = from + limit - 1
 
-    console.log('Sample tasks (first 3 rows):', JSON.stringify(sample))
-    console.log('Sample error:', sampleError)
-
-    // Try fetching with number
-    const { data, error } = await supabase
+    const { data, error, count } = await supabase
       .from('tasks')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', Number(userId))
       .order('created_at', { ascending: false })
-
-    console.log('Tasks found for user_id', Number(userId), ':', data?.length)
-    console.log('Query error:', error)
+      .range(from, to)
 
     if (error) {
       return NextResponse.json({ error: 'Failed to fetch tasks', details: error }, { status: 500 })
     }
 
-    return NextResponse.json({ tasks: data || [], debug: { userId, sample } })
+    return NextResponse.json({ 
+      tasks: data || [],
+      total: count || 0,
+      page,
+      totalPages: Math.ceil((count || 0) / limit)
+    })
   } catch (error: any) {
-    console.error('GET /api/tasks error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
@@ -59,24 +53,23 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Task ID required' }, { status: 400 })
     }
 
-    const { data: task, error: fetchError } = await supabase
+    console.log('Deleting task uuid:', taskId, 'for user_id:', userId)
+
+    // Delete directly — user_id check ensures ownership
+    const { error: deleteError, count } = await supabase
       .from('tasks')
-      .select('uuid, user_id')
+      .delete({ count: 'exact' })
       .eq('uuid', taskId)
       .eq('user_id', Number(userId))
-      .maybeSingle()
 
-    if (fetchError || !task) {
-      return NextResponse.json({ error: 'Task not found or access denied' }, { status: 404 })
-    }
-
-    const { error: deleteError } = await supabase
-      .from('tasks')
-      .delete()
-      .eq('uuid', taskId)
+    console.log('Delete result — error:', deleteError, 'count:', count)
 
     if (deleteError) {
-      return NextResponse.json({ error: 'Failed to delete task' }, { status: 500 })
+      return NextResponse.json({ error: deleteError.message }, { status: 500 })
+    }
+
+    if (count === 0) {
+      return NextResponse.json({ error: 'Task not found or access denied' }, { status: 404 })
     }
 
     return NextResponse.json({ success: true })
