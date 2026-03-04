@@ -8,22 +8,37 @@ export async function GET(req: NextRequest) {
     const cookieStore = await cookies()
     const userId = cookieStore.get('user_id')?.value
 
+    console.log('=== Tasks API ===')
+    console.log('user_id from cookie:', userId)
+
     if (!userId) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
+    // First, fetch a sample row to see what user_id looks like in the table
+    const { data: sample, error: sampleError } = await supabase
+      .from('tasks')
+      .select('uuid, user_id, title')
+      .limit(3)
+
+    console.log('Sample tasks (first 3 rows):', JSON.stringify(sample))
+    console.log('Sample error:', sampleError)
+
+    // Try fetching with number
     const { data, error } = await supabase
       .from('tasks')
-      .select('uuid, user_id, title, description, is_active, created_at, updated_at, location, recurrence_rule, confirmation_msg, URL, URL_category')
+      .select('*')
       .eq('user_id', Number(userId))
       .order('created_at', { ascending: false })
 
+    console.log('Tasks found for user_id', Number(userId), ':', data?.length)
+    console.log('Query error:', error)
+
     if (error) {
-      console.error('Tasks fetch error:', error)
-      return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to fetch tasks', details: error }, { status: 500 })
     }
 
-    return NextResponse.json({ tasks: data || [] })
+    return NextResponse.json({ tasks: data || [], debug: { userId, sample } })
   } catch (error: any) {
     console.error('GET /api/tasks error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -44,7 +59,6 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Task ID required' }, { status: 400 })
     }
 
-    // Ensure user owns this task
     const { data: task, error: fetchError } = await supabase
       .from('tasks')
       .select('uuid, user_id')
