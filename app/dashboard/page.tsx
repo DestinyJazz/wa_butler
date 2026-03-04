@@ -9,9 +9,7 @@ interface Task {
   location?: string
   is_active?: boolean
   created_at?: string
-  updated_at?: string
   recurrence_rule?: string
-  confirmation_msg?: string
   URL?: string
   URL_category?: string
 }
@@ -56,7 +54,6 @@ function TaskCard({ task, onDelete }: { task: Task; onDelete: (id: string) => Pr
     onMouseOver={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
     onMouseOut={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
     >
-      {/* Left accent bar */}
       <div style={{
         position: 'absolute', left: 0, top: '16px', bottom: '16px', width: '3px', borderRadius: '3px',
         background: task.is_active
@@ -65,39 +62,28 @@ function TaskCard({ task, onDelete }: { task: Task; onDelete: (id: string) => Pr
       }} />
 
       <div style={{ flex: 1, paddingLeft: '8px' }}>
-        {/* Title row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
           <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#fff', margin: 0 }}>
             {task.title || 'Untitled Task'}
           </h3>
           {task.is_active && (
-            <span style={{
-              padding: '2px 10px',
-              background: 'rgba(16, 185, 129, 0.15)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              borderRadius: '100px',
-              fontSize: '11px', color: '#10b981', fontWeight: '600',
-            }}>Active</span>
+            <span style={{ padding: '2px 10px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '100px', fontSize: '11px', color: '#10b981', fontWeight: '600' }}>
+              Active
+            </span>
           )}
           {task.recurrence_rule && (
-            <span style={{
-              padding: '2px 10px',
-              background: 'rgba(102, 126, 234, 0.15)',
-              border: '1px solid rgba(102, 126, 234, 0.3)',
-              borderRadius: '100px',
-              fontSize: '11px', color: '#8B92F6', fontWeight: '600',
-            }}>🔄 Recurring</span>
+            <span style={{ padding: '2px 10px', background: 'rgba(102, 126, 234, 0.15)', border: '1px solid rgba(102, 126, 234, 0.3)', borderRadius: '100px', fontSize: '11px', color: '#8B92F6', fontWeight: '600' }}>
+              🔄 Recurring
+            </span>
           )}
         </div>
 
-        {/* Description */}
         {task.description && (
           <p style={{ fontSize: '14px', color: '#888', margin: '0 0 10px 0', lineHeight: '1.5' }}>
             {task.description}
           </p>
         )}
 
-        {/* Meta row */}
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
           {task.created_at && (
             <span style={{ fontSize: '13px', color: '#666' }}>
@@ -122,50 +108,39 @@ function TaskCard({ task, onDelete }: { task: Task; onDelete: (id: string) => Pr
         </div>
       </div>
 
-      {/* Delete button */}
       <div style={{ flexShrink: 0 }}>
         {!confirming ? (
-          <button
-            onClick={() => setConfirming(true)}
-            style={{
-              padding: '8px 14px', background: 'transparent', color: '#666',
-              border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-              fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s',
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.borderColor = '#ef4444'
-              e.currentTarget.style.color = '#ef4444'
-              e.currentTarget.style.background = 'rgba(239,68,68,0.08)'
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-              e.currentTarget.style.color = '#666'
-              e.currentTarget.style.background = 'transparent'
-            }}
-          >
+          <button onClick={() => setConfirming(true)} style={{
+            padding: '8px 14px', background: 'transparent', color: '#666',
+            border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+            fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s',
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.borderColor = '#ef4444'
+            e.currentTarget.style.color = '#ef4444'
+            e.currentTarget.style.background = 'rgba(239,68,68,0.08)'
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+            e.currentTarget.style.color = '#666'
+            e.currentTarget.style.background = 'transparent'
+          }}>
             🗑 Delete
           </button>
         ) : (
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              style={{
-                padding: '8px 14px', background: '#ef4444', color: '#fff',
-                border: 'none', borderRadius: '8px', fontSize: '13px',
-                fontWeight: '600', cursor: deleting ? 'not-allowed' : 'pointer',
-              }}
-            >
+            <button onClick={handleDelete} disabled={deleting} style={{
+              padding: '8px 14px', background: '#ef4444', color: '#fff',
+              border: 'none', borderRadius: '8px', fontSize: '13px',
+              fontWeight: '600', cursor: deleting ? 'not-allowed' : 'pointer',
+            }}>
               {deleting ? '...' : 'Confirm'}
             </button>
-            <button
-              onClick={() => setConfirming(false)}
-              style={{
-                padding: '8px 12px', background: 'transparent', color: '#888',
-                border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-                fontSize: '13px', cursor: 'pointer',
-              }}
-            >
+            <button onClick={() => setConfirming(false)} style={{
+              padding: '8px 12px', background: 'transparent', color: '#888',
+              border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+              fontSize: '13px', cursor: 'pointer',
+            }}>
               Cancel
             </button>
           </div>
@@ -183,19 +158,24 @@ export default function DashboardPage() {
   const [tasksLoading, setTasksLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [deleteToast, setDeleteToast] = useState('')
-  const [reconnected, setReconnected] = useState(false)
   const [error, setError] = useState('')
+  const [reconnected, setReconnected] = useState(false)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('reconnected') === 'true') setReconnected(true)
-
     const userId = getCookie('user_id')
     if (!userId) { setError('not_logged_in'); setLoading(false); return }
-
     fetchUserData(userId)
-    fetchTasks()
   }, [])
+
+  useEffect(() => {
+    const userId = getCookie('user_id')
+    if (userId) fetchTasks(page)
+  }, [page])
 
   function getCookie(name: string) {
     const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
@@ -214,12 +194,15 @@ export default function DashboardPage() {
     finally { setLoading(false) }
   }
 
-  async function fetchTasks() {
+  async function fetchTasks(p = 1) {
+    setTasksLoading(true)
     try {
-      const res = await fetch('/api/tasks')
+      const res = await fetch(`/api/tasks?page=${p}`)
       if (res.ok) {
         const data = await res.json()
         setTasks(data.tasks || [])
+        setTotalPages(data.totalPages || 1)
+        setTotal(data.total || 0)
       }
     } catch (e) { console.error(e) }
     finally { setTasksLoading(false) }
@@ -229,6 +212,7 @@ export default function DashboardPage() {
     const res = await fetch(`/api/tasks?id=${encodeURIComponent(uuid)}`, { method: 'DELETE' })
     if (res.ok) {
       setTasks((prev) => prev.filter((t) => t.uuid !== uuid))
+      setTotal((prev) => prev - 1)
       setDeleteToast('Task deleted')
       setTimeout(() => setDeleteToast(''), 3000)
     } else {
@@ -268,7 +252,6 @@ export default function DashboardPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#fff', padding: '40px 24px' }}>
-      {/* Toast */}
       {deleteToast && (
         <div style={{ position: 'fixed', bottom: '32px', right: '32px', padding: '14px 20px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '12px', color: '#10b981', fontWeight: '600', fontSize: '14px', zIndex: 9999 }}>
           ✓ {deleteToast}
@@ -287,15 +270,15 @@ export default function DashboardPage() {
             {userData ? `Hey, ${userData.Name.split(' ')[0]} 👋` : 'Dashboard'}
           </h1>
           <p style={{ color: '#666', fontSize: '15px' }}>
-            {userData?.Phone_number} · {activeCount} active task{activeCount !== 1 ? 's' : ''}
+            {userData?.Phone_number} · {total} task{total !== 1 ? 's' : ''} total
           </p>
         </div>
 
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '36px' }}>
           {[
-            { label: 'Total Tasks', value: tasks.length, icon: '📋' },
-            { label: 'Active Tasks', value: activeCount, icon: '✅' },
+            { label: 'Total Tasks', value: total, icon: '📋' },
+            { label: 'Active (this page)', value: activeCount, icon: '✅' },
             { label: 'Google Calendar', value: googleData ? 'Connected' : 'Not connected', icon: googleData ? '🗓️' : '❌' },
           ].map((stat, i) => (
             <div key={i} style={{ padding: '20px 24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px' }}>
@@ -355,6 +338,37 @@ export default function DashboardPage() {
               {filteredTasks.map((task) => (
                 <TaskCard key={task.uuid} task={task} onDelete={handleDeleteTask} />
               ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '32px' }}>
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                style={{
+                  padding: '8px 18px', background: page === 1 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                  color: page === 1 ? '#444' : '#fff', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px', fontSize: '14px', cursor: page === 1 ? 'not-allowed' : 'pointer',
+                }}
+              >
+                ← Prev
+              </button>
+              <span style={{ color: '#666', fontSize: '14px' }}>
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                style={{
+                  padding: '8px 18px', background: page === totalPages ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                  color: page === totalPages ? '#444' : '#fff', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px', fontSize: '14px', cursor: page === totalPages ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Next →
+              </button>
             </div>
           )}
         </div>
