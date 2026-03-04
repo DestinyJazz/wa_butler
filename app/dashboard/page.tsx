@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 
 interface Task {
-  uuid: string
+  id: string
   title: string
   description?: string
   location?: string
@@ -32,7 +32,7 @@ function TaskCard({ task, onDelete }: { task: Task; onDelete: (id: string) => Pr
   const handleDelete = async () => {
     setDeleting(true)
     try {
-      await onDelete(task.uuid)
+      await onDelete(task.id)
     } finally {
       setDeleting(false)
       setConfirming(false)
@@ -208,10 +208,10 @@ export default function DashboardPage() {
     finally { setTasksLoading(false) }
   }
 
-  async function handleDeleteTask(uuid: string): Promise<void> {
+  async function handleDeleteTask(id: string): Promise<void> {
     const res = await fetch(`/api/tasks?id=${encodeURIComponent(uuid)}`, { method: 'DELETE' })
     if (res.ok) {
-      setTasks((prev) => prev.filter((t) => t.uuid !== uuid))
+      setTasks((prev) => prev.filter((t) => t.id !== uuid))
       setTotal((prev) => prev - 1)
       setDeleteToast('Task deleted')
       setTimeout(() => setDeleteToast(''), 3000)
@@ -336,7 +336,7 @@ export default function DashboardPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {filteredTasks.map((task) => (
-                <TaskCard key={task.uuid} task={task} onDelete={handleDeleteTask} />
+                <TaskCard key={task.id} task={task} onDelete={handleDeleteTask} />
               ))}
             </div>
           )}
