@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '../../../lib/supabase'
 import { cookies } from 'next/headers'
 
-// GET /api/tasks — fetch all tasks for the logged-in user
 export async function GET(req: NextRequest) {
   try {
     const cookieStore = await cookies()
@@ -15,9 +14,9 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await supabase
       .from('tasks')
-      .select('*')
+      .select('uuid, user_id, title, description, is_active, created_at, updated_at, location, recurrence_rule, confirmation_msg, URL, URL_category')
       .eq('user_id', Number(userId))
-      .order('start_time', { ascending: true })
+      .order('created_at', { ascending: false })
 
     if (error) {
       console.error('Tasks fetch error:', error)
@@ -31,7 +30,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// DELETE /api/tasks?id=<task_id> — delete a task
 export async function DELETE(req: NextRequest) {
   try {
     const cookieStore = await cookies()
@@ -46,11 +44,11 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Task ID required' }, { status: 400 })
     }
 
-    // Ensure user owns this task before deleting
+    // Ensure user owns this task
     const { data: task, error: fetchError } = await supabase
       .from('tasks')
-      .select('task_id, user_id')
-      .eq('task_id', taskId)
+      .select('uuid, user_id')
+      .eq('uuid', taskId)
       .eq('user_id', Number(userId))
       .maybeSingle()
 
@@ -61,16 +59,14 @@ export async function DELETE(req: NextRequest) {
     const { error: deleteError } = await supabase
       .from('tasks')
       .delete()
-      .eq('task_id', taskId)
+      .eq('uuid', taskId)
 
     if (deleteError) {
-      console.error('Delete error:', deleteError)
       return NextResponse.json({ error: 'Failed to delete task' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    console.error('DELETE /api/tasks error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
