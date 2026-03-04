@@ -8,12 +8,15 @@ export async function sendWhatsAppOTP(phone: string, otp: string): Promise<void>
     throw new Error('WAHA_URL environment variable is not set')
   }
 
-  // Format phone number as WhatsApp chat ID (e.g. 60123456789@c.us)
   const chatId = phone.includes('@') ? phone : `${phone}@c.us`
-
   const message = `Your WhatsApp Butler verification code is: *${otp}*\n\nThis code expires in 5 minutes. Do not share it with anyone.`
 
-  const response = await fetch(`${wahaUrl}/api/sendText`, {
+  // WAHA v2 uses /api/{session}/sendText
+  const endpoint = `${wahaUrl}/api/${wahaSession}/sendText`
+
+  console.log('Sending to WAHA endpoint:', endpoint)
+
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
