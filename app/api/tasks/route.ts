@@ -1,6 +1,6 @@
 // app/api/tasks/bulk-update/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '../../../../lib/supabase'
+import { supabase } from '../../../lib/supabase'
 import { cookies } from 'next/headers'
 
 export async function POST(req: NextRequest) {
